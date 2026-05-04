@@ -514,16 +514,16 @@ def render_individual_performance_chart(directory: str) -> None:
     st.plotly_chart(fig)
 
 
-def render_swr_trends_chart(directory: str) -> None:
-    """Render Safe Withdrawal Rate trends chart."""
-    data = load_swr_history(directory)
+def render_swr_trends_chart(directory: str, annual_spend: float) -> None:
+    """Render Safe Withdrawal Rate trends chart based on annual spend."""
+    data = load_portfolio_history(directory)
     
     if not data:
-        st.warning("No SWR data found.")
+        st.warning("No portfolio history data found.")
         return
     
     dates = [item[0] for item in data]
-    swr_values = [item[1] for item in data]
+    swr_values = [(annual_spend / item[1]) * 100 for item in data]
     
     fig = go.Figure()
     fig.add_trace(go.Scatter(
@@ -561,6 +561,7 @@ def main():
     future_amount = aside.number_input("Future contribution amount (CAD)", min_value=0.0, value=500000.0, step=10000.0)
     projection_years = aside.slider("Projection horizon (years)", min_value=5, max_value=40, value=20)
     show_investment_details = aside.checkbox("Show investment holdings", value=True)
+    annual_spend = aside.number_input("Current Annual Spend (CAD)", min_value=0.0, value=125000.0, step=1000.0)
 
     holdings, cash_cad, cash_usd, future_value, ticker = load_portfolio(demo_mode)
 
@@ -606,7 +607,7 @@ def main():
     st.markdown("### Historical Trends")
     render_investment_history_chart(history_dir)
     render_individual_performance_chart(history_dir)
-    render_swr_trends_chart(history_dir)
+    render_swr_trends_chart(history_dir, annual_spend)
 
     if show_investment_details:
         st.markdown("### Investment Holdings")
