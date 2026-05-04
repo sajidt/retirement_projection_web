@@ -547,6 +547,48 @@ def render_swr_trends_chart(directory: str, annual_spend: float) -> None:
     st.plotly_chart(fig)
 
 
+def render_future_swr_projection_chart(start_value: float, current_annual_spend: float, annual_return: float, years: int) -> None:
+    """Render a future annual SWR projection based on projected net worth."""
+    if years <= 0:
+        st.warning("Projection horizon must be greater than zero.")
+        return
+
+    year_labels = [datetime.now().year + i + 1 for i in range(years)]
+    annual_spends = []
+    future_net_worth = []
+    balance = start_value
+    spend = current_annual_spend
+
+    for _ in range(years):
+        annual_spends.append(spend)
+        balance = balance * (1 + annual_return) - spend
+        future_net_worth.append(balance)
+        spend *= 1.03
+
+    swr_projection = [
+        (annual_spends[i] / future_net_worth[i]) * 100 if future_net_worth[i] > 0 else None
+        for i in range(years)
+    ]
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=year_labels,
+        y=swr_projection,
+        mode='lines+markers',
+        name='Future SWR Projection',
+        line=dict(color='green', width=2),
+        marker=dict(size=6)
+    ))
+
+    fig.update_layout(
+        title="Future Annual SWR Projection",
+        xaxis_title="Year",
+        yaxis_title="Projected SWR (%)",
+        template="plotly_white"
+    )
+    st.plotly_chart(fig)
+
+
 def main():
     st.set_page_config(page_title="Retirement Projection Web", layout="wide")
     st.title("Retirement Projection Web")
@@ -608,6 +650,13 @@ def main():
     render_investment_history_chart(history_dir)
     render_individual_performance_chart(history_dir)
     render_swr_trends_chart(history_dir, annual_spend)
+    st.markdown("### Future SWR Projection")
+    render_future_swr_projection_chart(
+        portfolio_data["total_investments"],
+        annual_spend,
+        portfolio_data["weighted_average"],
+        projection_years,
+    )
 
     if show_investment_details:
         st.markdown("### Investment Holdings")
