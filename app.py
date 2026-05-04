@@ -579,11 +579,26 @@ def render_future_swr_projection_chart(start_value: float, current_annual_spend:
         line=dict(color='green', width=2),
         marker=dict(size=6)
     ))
+    fig.add_trace(go.Scatter(
+        x=year_labels,
+        y=future_net_worth,
+        mode='lines+markers',
+        name='Future Net Worth',
+        line=dict(color='blue', width=2, dash='dash'),
+        marker=dict(size=6),
+        yaxis='y2'
+    ))
 
     fig.update_layout(
         title="Future Annual SWR Projection",
         xaxis_title="Year",
-        yaxis_title="Projected SWR (%)",
+        yaxis=dict(title="Projected SWR (%)"),
+        yaxis2=dict(
+            title="Future Net Worth (CAD)",
+            overlaying='y',
+            side='right',
+            tickformat=',.0f'
+        ),
         template="plotly_white"
     )
     st.plotly_chart(fig)
