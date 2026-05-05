@@ -4,7 +4,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import os
 import re
-from datetime import datetime
+from datetime import datetime, date
 from pathlib import Path
 
 from business_logic import (
@@ -149,9 +149,28 @@ def format_holdings_df(df: pd.DataFrame) -> pd.DataFrame:
     formatted["Price"] = formatted["Price"].map(lambda x: f"${x:,.2f}")
     formatted["MarketValueCAD"] = formatted["MarketValueCAD"].map(lambda x: f"${x:,.2f}")
     formatted["MarketValueUSD"] = formatted["MarketValueUSD"].map(lambda x: f"${x:,.2f}")
+    if "Change vs Prior Day" in formatted.columns:
+        formatted["Change vs Prior Day"] = formatted["Change vs Prior Day"].fillna("N/A")
     formatted["ExpenseRatio"] = formatted["ExpenseRatio"].map(lambda x: f"{x:.2f}%")
     formatted["LTReturn"] = formatted["LTReturn"].map(lambda x: f"{x:.2f}%")
     return formatted
+
+
+def render_holdings_table(df: pd.DataFrame) -> None:
+    formatted = format_holdings_df(df)
+    if "Change vs Prior Day" in formatted.columns:
+        def color_change(value):
+            if isinstance(value, str):
+                if value.startswith("+"):
+                    return f"<span style='color:green'>{value}</span>"
+                if value.startswith("$-") or value.strip().startswith("-"):
+                    return f"<span style='color:red'>{value}</span>"
+            return value
+
+        formatted["Change vs Prior Day"] = formatted["Change vs Prior Day"].map(color_change)
+        st.markdown(formatted.to_html(escape=False, index=False), unsafe_allow_html=True)
+    else:
+        st.dataframe(formatted)
 
 
 def get_default_history_directory(demo_mode: bool) -> str:
@@ -196,6 +215,52 @@ def load_portfolio_history(directory: str) -> list:
     
     data.sort(key=lambda x: x[0])
     return data
+
+
+def get_previous_portfolio_history_value(history: list[tuple[datetime, float]]) -> tuple[datetime, float] | None:
+    """Return the latest prior portfolio history entry, ignoring same-day saves if today has saved data."""
+    if not history:
+        return None
+
+    today = datetime.now().date()
+    if history[-1][0].date() == today:
+        for dt, value in reversed(history):
+            if dt.date() < today:
+                return dt, value
+        return None
+
+    return history[-1]
+
+
+def find_latest_prior_record(records: list[tuple[datetime, float]], cutoff_date: date):
+    for dt, value in reversed(records):
+        if dt.date() < cutoff_date:
+            return dt, value
+    return None
+
+
+def build_holdings_previous_day_changes(holdings_df: pd.DataFrame, history_dir: str) -> pd.DataFrame:
+    data_by_investment = load_individual_investment_history(history_dir)
+    today = datetime.now().date()
+
+    change_labels = []
+    for _, row in holdings_df.iterrows():
+        key = f"{row['Name']} ({row['Ticker']})"
+        records = data_by_investment.get(key, [])
+        prior_record = find_latest_prior_record(records, today)
+
+        if prior_record is not None:
+            _, prev_value = prior_record
+            change = row['MarketValueCAD'] - prev_value
+            pct = (change / prev_value * 100) if prev_value else 0.0
+            sign = '+' if change > 0 else ''
+            change_labels.append(f"{sign}${change:,.2f} ({sign}{pct:.2f}%)")
+        else:
+            change_labels.append("N/A")
+
+    result = holdings_df.copy()
+    result['Change vs Prior Day'] = change_labels
+    return result
 
 
 def load_individual_investment_history(directory: str) -> dict:
@@ -614,7 +679,7 @@ def main():
     aside = st.sidebar
     aside.header("Settings")
     demo_mode = aside.checkbox("Demo mode", value=False)
-    use_future = aside.checkbox("Include future cash", value=True)
+    use_future = aside.checkbox("Include future cash", value=False)
     future_amount = aside.number_input("Future contribution amount (CAD)", min_value=0.0, value=500000.0, step=10000.0)
     projection_years = aside.slider("Projection horizon (years)", min_value=5, max_value=40, value=20)
     show_investment_details = aside.checkbox("Show investment holdings", value=True)
@@ -632,17 +697,18 @@ def main():
 
     history_dir = get_default_history_directory(demo_mode)
     history = load_portfolio_history(history_dir)
-    latest_value = history[-1][1] if history else None
-    if latest_value:
-        diff = portfolio_data["total_investments"] - latest_value
-        delta = f"{format_currency(abs(diff))}" if diff != 0 else None
-        if diff < 0:
-            delta = f"-{delta}"
-        elif diff > 0:
-            delta = f"+{delta}"
+    previous_entry = get_previous_portfolio_history_value(history)
+
+    if previous_entry is not None:
+        _, previous_value = previous_entry
+        diff = portfolio_data["total_investments"] - previous_value
+        diff_pct = (diff / previous_value * 100) if previous_value else 0.0
+        sign = '+' if diff > 0 else ''
+        delta = f"{sign}{format_currency(diff)} ({sign}{diff_pct:.2f}%)"
     else:
         delta = None
 
+    holdings_df = build_holdings_previous_day_changes(holdings_df, history_dir)
     render_summary_cards(portfolio_data, usd_cad, delta)
     render_allocation_chart(portfolio_data)
     render_projection_chart(portfolio_data, projection_years)
@@ -675,7 +741,7 @@ def main():
 
     if show_investment_details:
         st.markdown("### Investment Holdings")
-        st.dataframe(format_holdings_df(holdings_df))
+        render_holdings_table(holdings_df)
 
     st.sidebar.markdown("---")
     st.sidebar.markdown("Built for browser-first retirement planning.")
