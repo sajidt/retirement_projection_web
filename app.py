@@ -19,6 +19,21 @@ from business_logic import (
 from ai import render_chat_interface, clear_chat_history
 
 
+# Cache market data for 10 minutes to prevent refetches on every chat message
+@st.cache_data(ttl=600)
+def cached_get_currency_conversion(ticker: str) -> float:
+    """Cached currency conversion with 10-minute TTL."""
+    return get_currency_conversion(ticker)
+
+
+@st.cache_data(ttl=600)
+def cached_get_holdings_dataframe(portfolio_tuple: tuple, usd_cad: float, demo_mode: bool) -> pd.DataFrame:
+    """Cached holdings dataframe with 10-minute TTL."""
+    # Convert tuple of tuples back to list of dicts
+    portfolio = [dict(item) for item in portfolio_tuple]
+    return get_holdings_dataframe(portfolio, usd_cad)
+
+
 def format_currency(value: float, currency: str = "CAD") -> str:
     return f"${value:,.2f} {currency}"
 
@@ -693,8 +708,8 @@ def main():
         future_value = future_amount
 
     with st.spinner("Fetching market data..."):
-        usd_cad = get_currency_conversion(ticker)
-        holdings_df = get_holdings_dataframe(holdings, usd_cad)
+        usd_cad = cached_get_currency_conversion(ticker)
+        holdings_df = cached_get_holdings_dataframe(tuple(tuple(d.items()) for d in holdings), usd_cad, demo_mode)
         portfolio_data = calculate_allocations(holdings_df, cash_cad, cash_usd, usd_cad, future_value, use_future)
 
     history_dir = get_default_history_directory(demo_mode)
