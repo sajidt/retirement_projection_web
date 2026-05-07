@@ -97,11 +97,11 @@ def query_ollama(conversation: List[Dict[str, str]]) -> str:
         response = requests.post(
             "http://localhost:11434/api/generate",
             json={
-                "model": "llama3-chatqa:latest",  # You can change to other models like llama3, mistral, neural-chat
+                "model": "gemma4:latest",  # You can change to other models like llama3, mistral, neural-chat
                 "prompt": prompt,
                 "stream": False
             },
-            timeout=60
+            timeout=300
         )
         if response.status_code == 200:
             data = response.json()
