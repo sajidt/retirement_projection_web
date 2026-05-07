@@ -16,6 +16,7 @@ from business_logic import (
     get_currency_conversion,
     load_portfolio,
 )
+from ai import render_chat_interface, clear_chat_history
 
 
 def format_currency(value: float, currency: str = "CAD") -> str:
@@ -684,6 +685,7 @@ def main():
     projection_years = aside.slider("Projection horizon (years)", min_value=5, max_value=40, value=20)
     show_investment_details = aside.checkbox("Show investment holdings", value=True)
     annual_spend = aside.number_input("Current Annual Spend (CAD)", min_value=0.0, value=125000.0, step=1000.0)
+    age = aside.number_input("Your Age", min_value=18, max_value=120, value=60, step=1)
 
     holdings, cash_cad, cash_usd, future_value, ticker = load_portfolio(demo_mode)
 
@@ -709,39 +711,60 @@ def main():
         delta = None
 
     holdings_df = build_holdings_previous_day_changes(holdings_df, history_dir)
-    render_summary_cards(portfolio_data, usd_cad, delta)
-    render_allocation_chart(portfolio_data)
-    render_projection_chart(portfolio_data, projection_years)
-    render_withdrawal_table(portfolio_data)
 
-    save_dir = history_dir
-    if st.sidebar.button("Save Current Values"):
-        export_text = build_portfolio_export_text(
-            usd_cad,
-            ticker,
-            holdings_df,
-            cash_cad,
-            cash_usd,
-            portfolio_data,
+    # Create tabs for Dashboard and AI Advisor
+    tab_dashboard, tab_ai = st.tabs(["📊 Dashboard", "🤖 AI Financial Advisor"])
+
+    with tab_dashboard:
+        render_summary_cards(portfolio_data, usd_cad, delta)
+        render_allocation_chart(portfolio_data)
+        render_projection_chart(portfolio_data, projection_years)
+        render_withdrawal_table(portfolio_data)
+
+        save_dir = history_dir
+        if st.sidebar.button("Save Current Values"):
+            export_text = build_portfolio_export_text(
+                usd_cad,
+                ticker,
+                holdings_df,
+                cash_cad,
+                cash_usd,
+                portfolio_data,
+            )
+            saved_path = save_portfolio_export(save_dir, export_text)
+            st.sidebar.success(f"Saved portfolio to {saved_path}")
+
+        st.markdown("### Historical Trends")
+        render_investment_history_chart(history_dir)
+        render_individual_performance_chart(history_dir)
+        render_swr_trends_chart(history_dir, annual_spend)
+        st.markdown("### Future SWR Projection")
+        render_future_swr_projection_chart(
+            portfolio_data["total_investments"],
+            annual_spend,
+            portfolio_data["weighted_average"],
+            projection_years,
         )
-        saved_path = save_portfolio_export(save_dir, export_text)
-        st.sidebar.success(f"Saved portfolio to {saved_path}")
 
-    st.markdown("### Historical Trends")
-    render_investment_history_chart(history_dir)
-    render_individual_performance_chart(history_dir)
-    render_swr_trends_chart(history_dir, annual_spend)
-    st.markdown("### Future SWR Projection")
-    render_future_swr_projection_chart(
-        portfolio_data["total_investments"],
-        annual_spend,
-        portfolio_data["weighted_average"],
-        projection_years,
-    )
+        if show_investment_details:
+            st.markdown("### Investment Holdings")
+            render_holdings_table(holdings_df)
 
-    if show_investment_details:
-        st.markdown("### Investment Holdings")
-        render_holdings_table(holdings_df)
+    with tab_ai:
+        col1, col2 = st.columns([1, 10])
+        with col1:
+            if st.button("🔄 Clear Chat", key="clear_chat"):
+                clear_chat_history()
+                st.rerun()
+        
+        render_chat_interface(
+            portfolio_data=portfolio_data,
+            cash_cad=cash_cad,
+            cash_usd=cash_usd,
+            age=age,
+            annual_spend=annual_spend,
+            holdings_df=holdings_df
+        )
 
     st.sidebar.markdown("---")
     st.sidebar.markdown("Built for browser-first retirement planning.")
