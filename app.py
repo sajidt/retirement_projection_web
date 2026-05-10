@@ -720,8 +720,11 @@ def main():
         _, previous_value = previous_entry
         diff = portfolio_data["total_investments"] - previous_value
         diff_pct = (diff / previous_value * 100) if previous_value else 0.0
-        sign = '+' if diff > 0 else ''
-        delta = f"{sign}{format_currency(diff)} ({sign}{diff_pct:.2f}%)"
+        if diff > 0:
+            sign = '+'
+            delta = f"{sign}{format_currency(diff)} ({sign}{diff_pct:.2f}%)"
+        else:
+            delta = f"-{format_currency(abs(diff))} ({diff_pct:.2f}%)"
     else:
         delta = None
 
