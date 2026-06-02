@@ -17,6 +17,7 @@ from ui_dashboard import render_dashboard_tab
 from ui_allocation import render_allocation_tab
 from ui_history import load_portfolio_history, build_holdings_previous_day_changes, render_history_tab
 from ui_projection import render_projection_tab
+from ui_expense import render_expense_tracker_tab
 
 
 # Cache market data for 10 minutes to prevent refetches on every chat message
@@ -191,11 +192,12 @@ def main():
 
     holdings_df = build_holdings_previous_day_changes(holdings_df, history_dir)
 
-    tab_dashboard, tab_history, tab_allocation, tab_projection, tab_ai = st.tabs([
+    tab_dashboard, tab_history, tab_allocation, tab_projection, tab_expense, tab_ai = st.tabs([
         "📊 Dashboard",
         "📈 Historical Trends",
         "🎯 Asset Allocation",
         "🔮 Future Projection",
+        "💼 Expense Tracker",
         "🤖 AI Financial Advisor",
     ])
 
@@ -229,6 +231,9 @@ def main():
 
     with tab_projection:
         render_projection_tab(portfolio_data, projection_years, annual_spend)
+
+    with tab_expense:
+        render_expense_tracker_tab()
 
     with tab_ai:
         col1, col2 = st.columns([1, 10])
