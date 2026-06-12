@@ -115,14 +115,14 @@ def calculate_projection_values_80_percent(total_value: float, expense_ratio: fl
 def build_future_projection(start_value: float, annual_return: float, years: int, consumption_rate: float = 0.025, inflation_rate: float = 0.03):
     """Return future value curves for projection scenarios."""
     start_year = datetime.now().year
-    timeline = np.arange(start_year, start_year + years)
+    timeline = np.arange(start_year, start_year + years + 1)
 
-    no_withdrawal = start_value * (1 + annual_return) ** np.arange(years)
+    no_withdrawal = start_value * (1 + annual_return) ** np.arange(years + 1)
 
-    consumption_values = []
+    consumption_values = [start_value]
     balance = start_value
     annual_consumption = start_value * consumption_rate
-    for _ in timeline:
+    for _ in range(years):
         balance = balance * (1 + annual_return) - annual_consumption
         consumption_values.append(balance)
         annual_consumption *= 1 + inflation_rate
@@ -130,8 +130,8 @@ def build_future_projection(start_value: float, annual_return: float, years: int
     pessimistic_return = max(annual_return - 0.03, 0.0)
     balance_pessimistic = start_value
     annual_consumption = start_value * consumption_rate
-    pessimistic_values = []
-    for _ in timeline:
+    pessimistic_values = [start_value]
+    for _ in range(years):
         balance_pessimistic = balance_pessimistic * (1 + pessimistic_return) - annual_consumption
         pessimistic_values.append(balance_pessimistic)
         annual_consumption *= 1 + inflation_rate

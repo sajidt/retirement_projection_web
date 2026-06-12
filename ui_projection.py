@@ -45,17 +45,17 @@ def render_future_swr_projection_chart(start_value: float, current_annual_spend:
         st.warning("Projection horizon must be greater than zero.")
         return
 
-    year_labels = [datetime.now().year + i + 1 for i in range(years)]
-    annual_spends = []
-    future_net_worth = []
+    year_labels = [datetime.now().year + i for i in range(years)]
+    annual_spends = [current_annual_spend]
+    future_net_worth = [start_value]
     balance = start_value
     spend = current_annual_spend
 
-    for _ in range(years):
-        annual_spends.append(spend)
+    for _ in range(years - 1):
         balance = balance * (1 + annual_return) - spend
-        future_net_worth.append(balance)
         spend *= 1.03
+        annual_spends.append(spend)
+        future_net_worth.append(balance)
 
     swr_projection = [
         (annual_spends[i] / future_net_worth[i]) * 100 if future_net_worth[i] > 0 else None
