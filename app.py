@@ -205,6 +205,7 @@ def main():
         render_dashboard_tab(
             portfolio_data=portfolio_data,
             usd_cad=usd_cad,
+            annual_spend=annual_spend,
             delta=delta,
             holdings_df=holdings_df,
             show_investment_details=show_investment_details,

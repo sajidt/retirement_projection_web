@@ -10,14 +10,24 @@ def format_currency(value: float, currency: str = "CAD") -> str:
     return f"${value:,.2f} {currency}"
 
 
-def render_summary_cards(portfolio_data: dict, usd_cad: float, delta: Optional[str] = None) -> None:
-    col1, col2, col3 = st.columns(3)
+def render_summary_cards(portfolio_data: dict, usd_cad: float, annual_spend: float, delta: Optional[str] = None) -> None:
+    safe_withdrawal_rate = (
+        annual_spend / portfolio_data["total_investments"] * 100
+        if annual_spend > 0 else None
+    )
+
+    col1, col2, col3, col4 = st.columns(4)
     col1.metric("Portfolio Value", format_currency(portfolio_data["total_investments"]), delta=delta)
     col2.metric("Net Expense Ratio", f"{portfolio_data['expense_ratio_net']:.2f}%")
     col3.metric("Weighted Return", f"{portfolio_data['weighted_average'] * 100:.2f}%")
+    col4.metric(
+        "Safe Withdrawal Rate",
+        f"{safe_withdrawal_rate:,.2f}%" if safe_withdrawal_rate is not None else "N/A",
+    )
 
     st.markdown(
-        f"**USD/CAD Exchange Rate:** {usd_cad:.4f}  \\n**Cash Total (CAD):** {format_currency(portfolio_data['total_cash'])}"
+        f"**USD/CAD Exchange Rate:** {usd_cad:.4f}<br>**Cash Total (CAD):** {format_currency(portfolio_data['total_cash'])}",
+        unsafe_allow_html=True,
     )
 
 
@@ -107,11 +117,12 @@ def render_holdings_table(df: pd.DataFrame) -> None:
 def render_dashboard_tab(
     portfolio_data: dict,
     usd_cad: float,
+    annual_spend: float,
     delta: Optional[str],
     holdings_df: pd.DataFrame,
     show_investment_details: bool,
 ) -> None:
-    render_summary_cards(portfolio_data, usd_cad, delta)
+    render_summary_cards(portfolio_data, usd_cad, annual_spend, delta)
     render_withdrawal_table(portfolio_data)
 
     if show_investment_details:
