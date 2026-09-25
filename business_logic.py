@@ -104,6 +104,7 @@ def calculate_projection_values_80_percent(total_value: float, expense_ratio: fl
     eighty_value = total_value * 0.80
     return {
         "80%": eighty_value,
+        "2.0%": eighty_value * 0.02,
         "2.5%": eighty_value * 0.025,
         "3.0%": eighty_value * 0.03,
         "3.5%": eighty_value * 0.035,

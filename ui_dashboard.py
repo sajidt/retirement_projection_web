@@ -45,11 +45,11 @@ def render_withdrawal_table(portfolio_data: dict) -> None:
         values["125k"],
     ]
     eighty_percent_amounts = [
+        values_80["2.0%"],
         values_80["2.5%"],
         values_80["3.0%"],
         values_80["3.5%"],
         values_80["4.0%"],
-        None,
         values_80["125k"],
     ]
 

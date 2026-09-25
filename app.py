@@ -115,7 +115,7 @@ def build_portfolio_export_text(
     lines.append("")
 
     eighty_values = calculate_projection_values_80_percent(total, portfolio_data['expense_ratio_net'])
-    lines.append(f"80% of Total = ${total * 0.8:,.2f} CAD")
+    lines.append(f"80% of Total = ${eighty_values['80%']:,.2f} CAD")
     lines.append(f"2.5% of Total = ${eighty_values['2.5%']:,.2f} CAD")
     lines.append(f"3.0% of Total = ${eighty_values['3.0%']:,.2f} CAD")
     lines.append(f"3.5% of Total = ${eighty_values['3.5%']:,.2f} CAD")
