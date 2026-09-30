@@ -34,10 +34,18 @@ def get_holdings_dataframe(portfolio: List[dict], usd_cad: float) -> pd.DataFram
     for investment in portfolio:
         ticker = investment.get("Ticker", "")
         price = 0.0
+        dividend_yield = None
         currency = investment.get("Currency", "CAD")
         if ticker:
             data = yf.Ticker(ticker)
-            price = float(data.get_fast_info().last_price)
+            fast_info = data.get_fast_info()
+            price = float(fast_info.last_price)
+            try:
+                dividend_yield = data.info.get("dividendYield")
+                if dividend_yield is not None:
+                    dividend_yield = float(dividend_yield)
+            except Exception:
+                dividend_yield = None
 
         market_value = price * investment.get("Quantity", 0)
         if currency.upper() == "USD":
@@ -49,12 +57,14 @@ def get_holdings_dataframe(portfolio: List[dict], usd_cad: float) -> pd.DataFram
         rows.append({
             "Name": investment["Name"],
             "Ticker": ticker,
+            "AccountType": investment.get("AccountType", "Unassigned"),
             "Currency": currency,
             "Quantity": investment["Quantity"],
             "Type": investment["Type"],
             "ExpenseRatio": investment["ExpenseRatio"],
             "LTReturn": investment["LTReturn"],
             "Price": price,
+            "Yield": dividend_yield,
             "MarketValueCAD": market_value_cad,
             "MarketValueUSD": market_value_usd,
         })

@@ -14,6 +14,7 @@ from business_logic import (
 )
 from ai import render_chat_interface, clear_chat_history
 from ui_dashboard import render_dashboard_tab
+from ui_income import render_investment_income_tab
 from ui_allocation import render_allocation_tab
 from ui_history import load_portfolio_history, build_holdings_previous_day_changes, render_history_tab
 from ui_projection import render_projection_tab
@@ -192,14 +193,18 @@ def main():
 
     holdings_df = build_holdings_previous_day_changes(holdings_df, history_dir)
 
-    tab_dashboard, tab_history, tab_allocation, tab_projection, tab_expense, tab_ai = st.tabs([
+    tab_dashboard, tab_income, tab_history, tab_allocation, tab_projection, tab_expense, tab_ai = st.tabs([
         "📊 Dashboard",
+        "💰 Investment Income",
         "📈 Historical Trends",
         "🎯 Asset Allocation",
         "🔮 Future Projection",
         "💼 Expense Tracker",
         "🤖 AI Financial Advisor",
     ])
+
+    with tab_income:
+        render_investment_income_tab(holdings_df, usd_cad)
 
     with tab_dashboard:
         render_dashboard_tab(
