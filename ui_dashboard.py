@@ -90,6 +90,11 @@ def format_holdings_df(df: pd.DataFrame) -> pd.DataFrame:
     formatted["Price"] = formatted["Price"].map(lambda x: f"${x:,.2f}")
     formatted["MarketValueCAD"] = formatted["MarketValueCAD"].map(lambda x: f"${x:,.2f}")
     formatted["MarketValueUSD"] = formatted["MarketValueUSD"].map(lambda x: f"${x:,.2f}")
+    if "Yield" in formatted.columns:
+        formatted.rename(columns={"Yield": "Dividend Yield"}, inplace=True)
+        formatted["Dividend Yield"] = formatted["Dividend Yield"].map(
+            lambda value: f"{value:.2f}%" if pd.notna(value) else "N/A"
+        )
     if "Change vs Prior Day" in formatted.columns:
         formatted["Change vs Prior Day"] = formatted["Change vs Prior Day"].fillna("N/A")
     formatted["ExpenseRatio"] = formatted["ExpenseRatio"].map(lambda x: f"{x:.2f}%")
